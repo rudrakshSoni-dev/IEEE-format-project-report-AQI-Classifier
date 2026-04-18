@@ -1,0 +1,47 @@
+\section{Future Scope}
+
+\subsection{Completed Milestones}
+
+Since the initial submission of this progress report, several components that
+were previously identified as future work have been successfully implemented
+and deployed.
+
+\subsubsection{Mobile-Friendly Web Application}
+A fully functional web-based interface has been developed and deployed,
+enabling users to upload environmental images and receive real-time AQI
+predictions in simplified categorical classes --- \textit{Healthy},
+\textit{Moderate}, and \textit{Unhealthy} --- without requiring any local
+setup. The application is cross-device accessible and optimized for both
+desktop and mobile browsers.
+
+\subsubsection{Cloud Deployment and Backend Infrastructure}
+The backend has been deployed on cloud infrastructure, ensuring scalability
+and real-time processing. The complete backend source code is publicly
+available at:
+\begin{center}
+  \url{https://github.com/ASR222/AQI_project}
+\end{center}
+The repository includes the trained model weights, FastAPI-based inference
+endpoints, and deployment configuration for reproducibility.
+
+\subsection{Current Future Scope}
+
+\subsubsection{Video-Based AQI Classification}
+The next major technical milestone is extending the current image-based
+classification pipeline to support continuous video streams. Rather than
+classifying individual static frames, the proposed system will perform
+temporal aggregation across consecutive frames to produce smoother and more
+reliable AQI estimates in real time. This will involve integrating lightweight
+temporal models or sliding-window inference over live camera feeds, making the
+system suitable for deployment on fixed surveillance infrastructure, traffic
+cameras, and drone footage.
+
+\subsubsection{Government and Institutional Tie-Ups}
+We are actively pursuing collaborations with relevant government bodies and
+environmental agencies to integrate our image-based AQI estimation system as
+a supplementary tool within existing air quality monitoring networks. Such
+partnerships would enable access to geographically distributed camera
+infrastructure, ground-truth sensor data for model validation, and pathways
+toward official recognition of image-based monitoring as a credible
+supplementary methodology. The goal is to bridge the gap between academic
+research and actionable environmental policy through institutional adoption.
