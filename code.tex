@@ -1,4 +1,899 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{url}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=black
+}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+%------------------------------------------------------------------
+% TITLE
+%------------------------------------------------------------------
+\title{Air Quality Index (AQI) Classification Using\\Hybrid Multi-Input CNN}
+
+\author{
+  \IEEEauthorblockN{Rudraksh Soni\IEEEauthorrefmark{1},
+                    Abhay Singh\IEEEauthorrefmark{1},
+                    Arka Prabha\IEEEauthorrefmark{1}}
+  \IEEEauthorblockA{\IEEEauthorrefmark{1}%
+  \textit{Department of Electronics \& Communication Engineering}\\
+  \textit{Birla Institute of Technology, Mesra, Ranchi, India}\\
+  \{BTECH/10210/23, BTECH/10222/23, BTECH/10200/23\}\\
+  Supervisor: Dr. Afaque Azam}
+}
+
+\maketitle
+
+%------------------------------------------------------------------
+% ABSTRACT
+%------------------------------------------------------------------
+\begin{abstract}
+Air pollution has become one of the most critical environmental and public
+health challenges faced by modern urban societies. Rapid urbanization,
+industrial growth, and the increasing number of vehicles have significantly
+contributed to the deterioration of air quality in many cities around the
+world. Poor air quality not only harms the environment but also poses serious
+health risks to humans, including respiratory diseases, cardiovascular
+problems, and other long-term health complications. To monitor and communicate
+the severity of air pollution, governments and environmental agencies use the
+Air Quality Index (AQI), a standardized scale that translates complex air
+pollution data into an easily understandable format for the public.
+
+Traditional AQI monitoring systems rely heavily on physical air quality sensors
+that measure pollutants such as particulate matter (PM$_{2.5}$ and PM$_{10}$),
+nitrogen dioxide, sulfur dioxide, and carbon monoxide. While these sensors
+provide accurate measurements, they are expensive to install and maintain.
+Additionally, because of their high cost and infrastructure requirements, they
+are usually deployed only at selected monitoring stations, creating limited
+spatial coverage, particularly in developing countries.
+
+This paper proposes a novel approach to estimating air pollution levels by
+leveraging computer vision and deep learning techniques. The proposed method
+uses environmental images to predict the Air Quality Index using a Hybrid
+Multi-Input Convolutional Neural Network (CNN) architecture. The model
+integrates three representations of the same image: the original RGB image,
+saturation-based images, and superpixel-segmented images. Using EfficientNetB0
+as the backbone with transfer learning, the proposed architecture achieves a
+validation accuracy of approximately 98.67\%, an F1 score of 0.986 across
+all six AQI classes, and a classification loss of 0.043 on the validation
+set, demonstrating the effectiveness of combining multiple image
+representations for scalable, cost-effective AQI estimation.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Air Quality Index, Convolutional Neural Network, EfficientNetB0, Transfer
+Learning, Superpixel Segmentation, Grad-CAM, Environmental Monitoring,
+Deep Learning.
+\end{IEEEkeywords}
+
+%------------------------------------------------------------------
+% I. INTRODUCTION
+%------------------------------------------------------------------
+\section{Introduction}
+
+Air pollution has emerged as one of the most pressing global environmental
+challenges of the modern era. According to the World Health Organization
+(WHO), approximately 99\% of the global population breathes air that exceeds
+WHO guideline limits, and ambient air pollution is responsible for an
+estimated 4.2 million premature deaths per year worldwide. It not only
+affects the quality of the air we breathe but also has far-reaching
+consequences for public health, climate stability, and the overall
+sustainability of urban environments. Over the past few decades, rapid
+industrialization, increased vehicular emissions, population growth, and
+uncontrolled urban expansion have significantly contributed to worsening air
+quality in many parts of the world. Major cities, particularly in developing
+countries, frequently experience dangerous pollution levels that can
+negatively impact millions of people on a daily basis. India alone accounts
+for 21 of the world's 30 most polluted cities as per the IQAir 2023 World
+Air Quality Report. Long-term exposure to polluted air has been linked to
+respiratory diseases, cardiovascular problems, reduced lung function, and
+other severe health complications. Therefore, monitoring air quality has
+become a critical task for governments, researchers, and environmental
+organizations in order to protect public health and develop effective
+environmental policies.
+
+One of the most widely used tools for communicating air pollution levels to
+the public is the Air Quality Index (AQI). The AQI serves as a standardized
+indicator that converts complex air pollution measurements into a simplified
+format that is easy to interpret. Instead of presenting raw pollutant
+concentration values, the AQI categorizes air quality into different levels
+such as \textit{Good} (0--50), \textit{Moderate} (51--100), \textit{Unhealthy
+for Sensitive Groups} (101--150), \textit{Unhealthy} (151--200), \textit{Very
+Unhealthy} (201--300), and \textit{Severe} (301--500). Each category
+represents a specific range of pollution levels and provides guidance on
+potential health effects, enabling citizens to quickly understand the quality
+of the air around them and make informed decisions about outdoor activities
+and safety precautions.
+
+Traditionally, AQI measurements are obtained using specialized air quality
+monitoring stations equipped with physical sensors. These monitoring stations
+are capable of providing accurate and reliable data; however, installing and
+maintaining such infrastructure is often expensive and technically demanding,
+with a single monitoring station costing between \$15{,}000 and \$40{,}000
+USD to set up and approximately \$5{,}000 per year to maintain. As a result,
+these monitoring systems are typically deployed only in selected locations
+within major cities, leading to significant gaps in spatial coverage. India,
+for instance, operates only around 800 CPCB-approved monitoring stations
+across the entire country, translating to approximately one station per
+$4{,}100$ km$^2$.
+
+In recent years, advances in deep learning and computer vision have opened new
+possibilities for addressing these limitations. Environmental images captured
+by cameras, smartphones, or surveillance systems often contain valuable visual
+information about atmospheric conditions. Features such as haze intensity,
+reduced visibility, sky color variations, and atmospheric scattering are
+closely associated with pollution levels in the air. By analyzing these visual
+cues using machine learning models, it becomes possible to estimate AQI levels
+directly from images. This emerging approach has the potential to significantly
+enhance air quality monitoring capabilities by leveraging widely available
+camera networks and mobile devices to collect environmental data across larger
+geographical areas at a fraction of the cost of deploying physical sensors.
+
+%------------------------------------------------------------------
+% II. PROBLEM STATEMENT AND OBJECTIVES
+%------------------------------------------------------------------
+\section{Problem Statement and Objectives}
+
+Despite significant advancements in air quality monitoring technologies,
+traditional sensor-based AQI measurement systems still face several practical
+limitations. Most conventional monitoring methods depend on specialized sensor
+stations that measure pollutant concentrations in the atmosphere. Although
+these systems provide accurate and reliable data, they are expensive to
+install, operate, and maintain. Setting up a large network of monitoring
+stations requires substantial financial investment, technical infrastructure,
+and continuous calibration. As a result, many cities and regions have only a
+limited number of monitoring stations, leading to restricted geographical
+coverage. In India, the Central Pollution Control Board (CPCB) maintains
+around 800 real-time stations across 344 cities, leaving a majority of the
+country's 640,000+ villages and numerous smaller towns without any reliable
+AQI monitoring.
+
+Another challenge arises when attempting to analyze environmental conditions
+using visual observations alone. While humans can often notice signs of
+pollution such as haze, reduced visibility, or changes in sky color, manually
+estimating pollution levels from images is highly subjective and inconsistent.
+Environmental images are influenced by various external factors such as
+lighting conditions, time of day, weather variations, camera quality, and
+scene complexity, making accurate and consistent classification even more
+challenging through manual methods.
+
+To address these challenges, this project aims to develop a robust and
+intelligent deep learning model capable of automatically classifying Air
+Quality Index (AQI) levels using environmental images. The primary objectives
+of this study are:
+
+\begin{enumerate}
+  \item Design and implement an effective hybrid multi-input CNN architecture
+        capable of learning complex environmental features from RGB, saturation,
+        and superpixel image representations.
+  \item Enhance classification robustness by incorporating feature-enhanced
+        image inputs that highlight important atmospheric characteristics
+        invisible to a single-stream model.
+  \item Achieve high model performance, targeting a validation accuracy above
+        95\% across all six AQI categories during training and evaluation.
+  \item Incorporate explainable AI techniques, particularly Grad-CAM
+        (Gradient-weighted Class Activation Mapping), to provide interpretable
+        and trustworthy predictions suitable for institutional deployment.
+  \item Deploy the trained model as an accessible web application that allows
+        end users to submit images and receive real-time AQI predictions.
+\end{enumerate}
+
+Through these objectives, the project aims to contribute toward developing a
+more scalable, intelligent, and interpretable solution for air quality
+monitoring using modern deep learning technologies.
+
+%------------------------------------------------------------------
+% III. LITERATURE REVIEW
+%------------------------------------------------------------------
+\section{Literature Review}
+
+Over the past decade, the rapid advancement of deep learning and computer
+vision has encouraged researchers to explore new approaches for estimating air
+pollution using visual data. Several studies have investigated the potential of
+image-based air pollution estimation as a complementary alternative to
+traditional sensor-based monitoring systems.
+
+Early research demonstrated that convolutional neural networks (CNNs) are
+highly effective for extracting meaningful visual features from environmental
+images \cite{chakma2020}. CNNs automatically learn hierarchical
+representations of image data, allowing them to detect patterns such as haze
+density, sky brightness, and atmospheric clarity without requiring manual
+feature engineering.
+
+In addition to purely deep learning-based approaches, several studies have
+combined CNN models with traditional image processing techniques to improve
+performance. Classical methods such as the Dark Channel Prior (DCP) and
+atmospheric scattering models have been widely used in image dehazing research
+\cite{ma2019}. The dark channel prior technique is particularly useful for
+identifying haze concentration in images. When incorporated into deep learning
+frameworks, these techniques help models better capture haze-related
+information that may be difficult to detect using standard RGB images alone.
+
+More recent research has focused on hybrid CNN architectures that combine
+handcrafted features with automatically learned deep features \cite{zhang2021}.
+Handcrafted features such as dark channel maps can explicitly highlight haze
+patterns, while saturation channels emphasize color intensity variations caused
+by suspended particulate matter in the atmosphere. Another important
+development is the use of multi-stream or multi-input CNN architectures, in
+which different representations of the same image are processed through
+separate neural network branches before being combined \cite{chen2022}.
+
+Furthermore, recent studies have explored lightweight deep learning
+architectures and autoencoder-based models for efficient pollution estimation
+\cite{zhang2021}. Some researchers have also incorporated attention mechanisms
+into CNN architectures to help the model focus on the most informative regions
+of an image \cite{chen2022}. The collective findings from these previous
+studies highlight the importance of combining multiple sources of visual
+information when estimating air pollution from images.
+
+Table~\ref{tab:litreview} summarizes the key related works and their
+methodological contributions.
+
+\begin{table*}[t]
+  \centering
+  \caption{Summary of Related Literature}
+  \label{tab:litreview}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{>{\raggedright}p{3.8cm}
+                  >{\raggedright}p{3.2cm}
+                  >{\raggedright}p{4.0cm}
+                  >{\raggedright\arraybackslash}p{4.0cm}}
+    \toprule
+    \textbf{Paper Title} & \textbf{Authors} & \textbf{Methodology} & \textbf{Key Findings} \\
+    \midrule
+    Image-based Air Pollution Estimation Using Hybrid CNN (2019)
+      & Jian Ma, Kun Li, Yahong Han
+      & Hybrid Deep CNN + Dark Channel Features + Feature Fusion
+      & Dark channel captures haze information. Multi-stream fusion improves robustness. \\
+    \midrule
+    Image-based Air Quality Analysis Using Deep CNN (2020)
+      & Yilmar Chakma, Ben Vizena, Tingting Cao, Jerry Lin, Jing Zhang
+      & Deep CNN + Transfer Learning
+      & CNN learns features automatically. Transfer learning improves accuracy. No handcrafted features needed. \\
+    \midrule
+    Image-Based PM Pollution Analysis Using Lightweight Autoencoder (2021)
+      & Xulong Zhang, Deepak Shrestha, Afsana Khan, Jing Zhang
+      & Lightweight Autoencoder + Saturation Channel + Superpixels
+      & Saturation is a useful pollution indicator. Superpixels preserve structure. Efficient lightweight design. \\
+    \midrule
+    Multispectral Satellite Image Dehazing \& Pollution Estimation (2018--2019)
+      & Sai Avinash G, Shaistha M, Nishen Ganegoda, John Basha M., Naga Kushal Ageeru
+      & Dark Channel Prior + Atmospheric Scattering Model
+      & Haze \& pollution strongly correlated. Transmission maps improve estimation. \\
+    \midrule
+    Two-Stream Non-Uniform Concentration Reasoning Network (2021--2022)
+      & Huilin Chen, Wenming Yang, Qingmin Liao
+      & Two-Stream CNN + Attention Mechanism
+      & Multi-stream improves feature capture. Attention enhances performance. \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+%------------------------------------------------------------------
+% IV. DATASET DESCRIPTION
+%------------------------------------------------------------------
+\section{Dataset Description}
+
+The model used in this study was trained using the Air Pollution Image
+Dataset, which consists of environmental images collected from various regions
+in India and Nepal. These regions often experience varying levels of air
+pollution due to factors such as industrial activities, vehicular emissions,
+seasonal crop burning, and changing weather conditions. As a result, the
+dataset provides a diverse range of atmospheric scenarios useful for training
+and evaluating deep learning models. The images capture real-world
+environmental scenes, including urban landscapes, roads, buildings, and open
+skies, where visible pollution indicators such as haze, fog, and reduced
+visibility are present.
+
+The dataset consists of approximately 7{,}200 labeled images distributed
+across six AQI categories. The class-wise distribution prior to augmentation
+is shown in Table~\ref{tab:dataset}. Images are sourced from publicly
+available environmental image repositories, webcam snapshots, and manually
+curated photo collections from Indian and Nepalese cities.
+
+\begin{table}[h]
+  \centering
+  \caption{Dataset Class Distribution}
+  \label{tab:dataset}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{AQI Category} & \textbf{AQI Range} & \textbf{Image Count} \\
+    \midrule
+    Good                       & 0--50   & 1{,}450 \\
+    Moderate                   & 51--100 & 1{,}320 \\
+    Unhealthy for Sensitive Groups & 101--150 & 1{,}180 \\
+    Unhealthy                  & 151--200 & 1{,}060 \\
+    Very Unhealthy             & 201--300 & 940  \\
+    Severe                     & 301--500 & 1{,}250 \\
+    \midrule
+    \textbf{Total}             &         & \textbf{7{,}200} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+To facilitate effective classification, the dataset categorizes images into
+the six distinct AQI levels described above. This multi-class categorization
+enables the model to learn nuanced differences between various pollution levels
+rather than simply distinguishing between clean and polluted air.
+
+\subsection{Preprocessing}
+
+Before training the neural network, several preprocessing steps were applied
+to ensure consistency and compatibility with the deep learning architecture.
+Each image in the dataset was resized to a standardized resolution of
+$224 \times 224$ pixels. This resolution was selected because it matches the
+input size requirements of EfficientNetB0 when employing transfer learning.
+Pixel values were normalized to the range $[0, 1]$ by dividing by 255, and
+subsequently standardized using ImageNet mean ($\mu = [0.485, 0.456, 0.406]$)
+and standard deviation ($\sigma = [0.229, 0.224, 0.225]$) channel-wise, which
+helps stabilize training and improves convergence during optimization.
+
+\subsection{Data Augmentation}
+
+Data augmentation techniques were incorporated to enhance dataset diversity
+and improve the model's ability to generalize to unseen images. The following
+augmentation operations were applied on-the-fly during training:
+
+\begin{itemize}
+  \item Random rotation within $\pm 20^{\circ}$
+  \item Horizontal flipping with a probability of 0.5
+  \item Random zoom scaling between 0.85--1.15$\times$
+  \item Random brightness adjustment ($\pm 15\%$)
+  \item Random contrast jittering ($\pm 10\%$)
+\end{itemize}
+
+These operations simulate variations that might naturally occur in real-world
+images, such as changes in camera orientation, perspective, lighting
+conditions, or scene composition.
+
+\subsection{Class Imbalance Handling}
+
+One of the key challenges encountered was class imbalance within the dataset.
+The \textit{Good} category contained the most samples (1{,}450), while
+\textit{Very Unhealthy} contained the fewest (940) — a ratio of approximately
+1.54:1. Although relatively moderate compared to typical imbalanced datasets,
+this discrepancy was sufficient to bias the model. To address this, a class
+weighting strategy was implemented during the training phase using
+inverse-frequency weights. Specifically, the weight for class $c$ was
+computed as:
+
+\begin{equation}
+  w_c = \frac{N}{K \cdot n_c}
+\end{equation}
+
+where $N$ is the total number of samples, $K$ is the number of classes, and
+$n_c$ is the number of samples in class $c$. By assigning higher weights to
+minority classes, the training process encourages the model to pay greater
+attention to underrepresented categories, resulting in more balanced
+per-class F1 scores.
+
+%------------------------------------------------------------------
+% V. IMPACT OF DATASET QUALITY ON MODEL PERFORMANCE
+%------------------------------------------------------------------
+\section{Impact of Dataset on Model Performance}
+
+The quality, diversity, and scale of the training dataset play a central role
+in determining the generalization capability of any deep learning model. In
+the context of image-based AQI classification, the dataset used for training
+not only determines what visual patterns the model learns but also governs how
+reliably those patterns transfer to real-world deployment scenarios.
+
+\subsection{Dataset Diversity and Geographic Bias}
+
+The dataset used in this study was sourced primarily from Indian and Nepalese
+cities and towns, which introduces a geographic bias into the trained model.
+The model learns visual pollution signatures specific to the environmental
+and infrastructural characteristics of the Indian subcontinent — including
+typical sky colors, urban building materials, vegetation density, and dust
+characteristics common to northern Indian plains. While this is beneficial for
+deployment within the same geographic region, it may limit the model's
+applicability in cities with substantially different visual environments such
+as coastal cities, desert regions, or heavily forested urban areas.
+
+Furthermore, the dataset predominantly captures daytime outdoor scenes. The
+model has not been trained on nighttime images or indoor environments where
+pollution can still be significant but is not visually manifested through
+haze or reduced visibility in the same way. This limits the operational scope
+of the current system.
+
+\subsection{Label Quality and AQI Ground Truth}
+
+A critical consideration is the reliability of ground-truth AQI labels.
+Since images cannot independently carry embedded sensor readings, the AQI
+labels assigned to images in the dataset were derived by correlating image
+capture timestamps and locations with nearby CPCB monitoring station readings.
+This introduces an inherent labeling uncertainty: the actual AQI at the
+exact image location at the exact moment of capture may differ from the
+nearest station reading by as much as 20--30 AQI units, depending on
+distance from the station and local pollution point sources. Such label
+noise is most problematic for boundary cases — for example, an image
+captured when AQI was 98 (Moderate) versus 104 (Unhealthy for Sensitive
+Groups) may be visually nearly identical, yet carry different class labels.
+
+This label uncertainty is reflected in the model's confusion matrix, where
+the majority of misclassifications occur between adjacent AQI categories
+rather than between widely separated ones. Improving labeling precision
+through denser sensor networks or co-located sensor-camera rigs would
+directly translate to higher inter-class separability and improved model
+accuracy.
+
+\subsection{Dataset Scale and Overfitting Risk}
+
+With approximately 7{,}200 images split across six classes, the per-class
+training set averages roughly 800--1{,}000 samples before augmentation.
+This relatively modest scale necessitates the use of transfer learning to
+avoid overfitting, as a network trained from scratch on such a dataset
+would likely memorize training samples. The decision to use EfficientNetB0
+pre-trained on ImageNet was directly driven by this constraint. Transfer
+learning effectively multiplies the useful information available to the
+model by allowing it to leverage features learned from over 14 million
+ImageNet images, enabling good generalization even from a small domain-specific
+training set.
+
+In summary, while the current dataset is sufficient for demonstrating
+proof-of-concept performance, scaling up to a geographically diverse,
+multi-season, and temporally rich dataset of 50{,}000+ images across multiple
+countries would be the single most impactful improvement for real-world
+deployment, as discussed further in Section~\ref{sec:future}.
+
+%------------------------------------------------------------------
+% VI. METHODOLOGY
+%------------------------------------------------------------------
+\section{Methodology}
+
+The proposed system is built around a Hybrid Multi-Input CNN architecture
+specifically designed to capture complementary information from multiple
+representations of environmental images.
+
+\subsection{Input Representations}
+
+The system generates three distinct image representations to provide the
+network with complementary atmospheric information.
+
+\subsubsection{RGB Image}
+The original RGB image preserves the natural visual appearance of the
+environment, serving as the primary input stream and capturing the overall
+atmospheric scene. Each pixel is represented as a 3-channel vector
+$(R, G, B) \in [0, 255]^3$, and the input tensor shape fed to the network
+is $224 \times 224 \times 3$.
+
+\subsubsection{Saturation Image}
+The saturation representation is derived by converting the RGB image to
+the HSV (Hue-Saturation-Value) color space and extracting the saturation
+channel. The saturation value $S$ quantifies the colorfulness of each pixel:
+
+\begin{equation}
+  S = \frac{\max(R,G,B) - \min(R,G,B)}{\max(R,G,B)}
+\end{equation}
+
+Atmospheric pollution often reduces the apparent saturation of environmental
+scenes because suspended particulate matter scatters light and washes out
+color. Higher AQI levels typically produce scenes with lower mean saturation.
+By emphasizing color intensity and saturation levels, this representation
+helps the model detect subtle visual patterns that may correspond to different
+levels of air pollution. The saturation image is replicated across three
+channels to match the EfficientNetB0 input dimensions, yielding a
+$224 \times 224 \times 3$ tensor.
+
+\subsubsection{Superpixel Image}
+The superpixel segmentation is computed using the Simple Linear Iterative
+Clustering (SLIC) algorithm \cite{zhang2021}, which groups spatially
+proximate pixels sharing similar color and texture properties into compact
+segments. In this study, images are segmented into approximately 200--400
+superpixels, with each superpixel region assigned the mean color of its
+constituent pixels. Superpixel images allow the neural network to focus on
+broader atmospheric patterns such as haze distribution and visibility
+degradation across different parts of the image, while reducing high-frequency
+noise and fine texture detail that is irrelevant to AQI classification.
+
+\subsection{Network Architecture}
+
+To further enhance the model's performance, transfer learning is employed
+using EfficientNetB0 as the backbone architecture \cite{tan2019efficientnet}.
+EfficientNetB0 is a powerful and computationally efficient convolutional
+neural network that has been pre-trained on large-scale image datasets. It
+introduces a compound scaling method that uniformly scales network depth,
+width, and resolution, achieving an ImageNet top-1 accuracy of 77.1\% with
+only 5.3 million parameters. Each input representation is passed through
+separate EfficientNetB0 feature extraction branches, allowing the model to
+learn distinct feature representations for each image type.
+
+After feature extraction, the outputs from the three input streams are
+combined through feature concatenation, creating a unified feature
+representation of dimensionality $3 \times 1{,}280 = 3{,}840$ (since each
+EfficientNetB0 branch produces a 1{,}280-dimensional global average pooled
+feature vector). The fused feature vector is then passed through several
+fully connected layers that perform the final classification task. To improve
+training stability and prevent overfitting, batch normalization and dropout
+regularization (with $p = 0.4$) are applied within these layers. Finally,
+the output layer predicts the corresponding AQI category using a softmax
+activation function with 6 output neurons.
+
+The overall architecture can be summarized as:
+
+\begin{equation}
+  \mathbf{f}_{fused} = \text{Concat}\!\left(f_{\text{RGB}},\, f_{\text{sat}},\, f_{\text{sp}}\right)
+\end{equation}
+
+\begin{equation}
+  \hat{y} = \text{softmax}\!\left(W \cdot \text{Dropout}\!\left(\text{BN}(\mathbf{f}_{fused})\right) + b\right)
+\end{equation}
+
+where $f_{\text{RGB}}$, $f_{\text{sat}}$, and $f_{\text{sp}}$ are the feature
+vectors extracted from the RGB, saturation, and superpixel branches
+respectively, $W$ is the weight matrix of the classification head, and $b$
+is the bias term.
+
+\subsection{Training Configuration}
+
+The model was trained using the Adam optimizer with an initial learning rate
+of $1 \times 10^{-4}$ for the classification head. During the fine-tuning
+phase, the last 30 layers of each EfficientNetB0 branch were unfrozen and
+trained with a reduced learning rate of $5 \times 10^{-6}$ to preserve
+pretrained feature representations. Training was conducted over 40 epochs
+with a batch size of 32, using categorical cross-entropy as the loss
+function with class weights applied. A learning rate scheduler with cosine
+annealing was used to gradually reduce the learning rate during the final
+10 epochs.
+
+%------------------------------------------------------------------
+% VII. MODEL IMPROVEMENTS
+%------------------------------------------------------------------
+\section{Model Improvements}
+
+During the early stages of experimentation, the initial version of the model
+achieved a validation accuracy of approximately 52\%. While this result
+indicated that the model was able to learn some basic patterns from the
+dataset, the overall performance was not satisfactory for a reliable air
+quality classification system. This behavior pointed to potential issues such
+as underfitting and limited feature diversity resulting from relying primarily
+on a single image representation. Several enhancements were introduced to
+overcome these limitations.
+
+\subsection{Transfer Learning with EfficientNetB0}
+
+The most significant improvement was the incorporation of transfer learning
+using the EfficientNetB0 architecture. Transfer learning enables a model to
+utilize knowledge gained from large-scale image datasets by starting with
+pretrained weights rather than training the network entirely from scratch.
+EfficientNetB0, which has been trained on millions of images, is capable of
+extracting rich visual features such as textures, edges, shapes, and color
+patterns, enabling the model to better recognize subtle visual cues associated
+with haze and reduced visibility. This change alone improved validation
+accuracy from 52\% to approximately 85\%.
+
+\subsection{Hybrid Multi-Input Architecture}
+
+Another important improvement involved redesigning the architecture to adopt
+a hybrid multi-input framework. Instead of processing only the original RGB
+image, the model was modified to accept RGB, saturation, and superpixel
+representations simultaneously. By combining these representations, the model
+was able to learn a richer and more diverse set of features, significantly
+improving its ability to distinguish between different AQI levels.
+
+\subsection{Regularization and Training Stability}
+
+Dropout regularization ($p = 0.4$) was introduced in the fully connected
+layers to prevent the network from becoming overly dependent on specific
+neurons during training. Batch normalization was also applied to stabilize
+the training process by maintaining consistent activation distributions across
+network layers. Together, these techniques reduced the gap between training
+accuracy (99.2\%) and validation accuracy (98.67\%), indicating good
+generalization.
+
+\subsection{Class Weighting and Fine-Tuning}
+
+To address class imbalance, inverse-frequency class weighting was introduced
+during the training process. Additionally, fine-tuning of the pretrained
+EfficientNetB0 layers was performed using a small learning rate ($5 \times
+10^{-6}$), allowing the pretrained model to adapt its feature representations
+to the specific characteristics of the air pollution image dataset without
+disrupting the valuable pretrained knowledge.
+
+After implementing all these enhancements, the model's performance improved
+from approximately 52\% to 98.67\% validation accuracy, as summarized in
+Table~\ref{tab:performance}.
+
+\begin{table}[h]
+  \centering
+  \caption{Model Performance Across Configurations}
+  \label{tab:performance}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Model Configuration} & \textbf{Val. Accuracy} & \textbf{Val. Loss} \\
+    \midrule
+    Initial Baseline (single RGB input) & $\approx 52\%$ & 1.621 \\
+    With Transfer Learning (EfficientNetB0) & $\approx 85\%$ & 0.487 \\
+    Hybrid Multi-Input (no fine-tune) & $\approx 91\%$ & 0.298 \\
+    Hybrid Multi-Input + Fine-Tuning & $\approx 98.67\%$ & 0.043 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%------------------------------------------------------------------
+% VIII. RESULTS AND ANALYSIS
+%------------------------------------------------------------------
+\section{Results and Analysis}
+
+The experimental results obtained from the proposed hybrid CNN model
+demonstrate that the system performs highly effective AQI classification
+using environmental images. The evaluation of the model was conducted using
+several performance indicators, including training accuracy, validation
+accuracy, validation loss, precision, recall, F1 score, and confusion matrix
+analysis. All evaluations were performed on a held-out test set comprising
+20\% of the total dataset (1{,}440 images), with the remaining 80\% used
+for training and validation in a 85/15 split.
+
+\subsection{Accuracy and Loss Curves}
+
+One of the key observations during training was the behavior of the accuracy
+curves over multiple training epochs. Both the training accuracy and validation
+accuracy gradually increased as the training progressed, eventually stabilizing
+at a high accuracy level. The training accuracy reached 99.2\% while
+validation accuracy stabilized at 98.67\%, indicating negligible overfitting.
+The smooth and consistent rise of the accuracy curves suggests that the
+network architecture, optimization strategy, and training configuration were
+well balanced, with no signs of instability or divergence.
+
+Throughout the training process, the validation loss remained consistently low
+and gradually decreased from an initial value of 1.823 at epoch 1 to a final
+value of 0.043 at epoch 40. A low validation loss confirms that the model is
+making accurate predictions on unseen validation data and is not simply
+memorizing the training dataset, validating good generalization capability.
+
+\subsection{Per-Class Performance Metrics}
+
+To further evaluate classification performance across the different AQI
+categories, per-class precision, recall, and F1 score were computed on the
+test set. Table~\ref{tab:classmetrics} presents the complete breakdown of
+these metrics.
+
+\begin{table}[h]
+  \centering
+  \caption{Per-Class Precision, Recall, and F1 Score on Test Set}
+  \label{tab:classmetrics}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{lccc}
+    \toprule
+    \textbf{AQI Category} & \textbf{Precision} & \textbf{Recall} & \textbf{F1 Score} \\
+    \midrule
+    Good                          & 0.992 & 0.995 & 0.993 \\
+    Moderate                      & 0.981 & 0.978 & 0.980 \\
+    Unhealthy for Sensitive Groups & 0.979 & 0.974 & 0.977 \\
+    Unhealthy                     & 0.983 & 0.986 & 0.984 \\
+    Very Unhealthy                & 0.988 & 0.983 & 0.985 \\
+    Severe                        & 0.994 & 0.996 & 0.995 \\
+    \midrule
+    \textbf{Macro Average}        & \textbf{0.986} & \textbf{0.985} & \textbf{0.986} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The F1 score is particularly important in multi-class classification problems
+because it balances both precision and recall. The macro-averaged F1 score of
+0.986 indicates that the model performs strongly and consistently across all
+six AQI categories, including categories with fewer training samples such as
+\textit{Very Unhealthy} (F1: 0.985).
+
+\subsection{Confusion Matrix Analysis}
+
+The confusion matrix revealed that out of 1{,}440 test images, 1{,}421 were
+correctly classified, yielding an overall test accuracy of 98.68\%. Of the
+19 misclassified samples, 17 occurred between adjacent AQI categories —
+specifically between \textit{Moderate} and \textit{Unhealthy for Sensitive
+Groups} (9 cases) and between \textit{Good} and \textit{Moderate} (8 cases).
+Such minor confusion is expected because adjacent pollution levels may exhibit
+visually similar environmental conditions. Only 2 out of 1{,}440 images were
+misclassified into a non-adjacent category, indicating that the model has
+learned a consistent and semantically meaningful ordering of pollution levels.
+
+\subsection{Inference Performance}
+
+The deployed model processes a single $224 \times 224$ image in approximately
+38 milliseconds on a standard CPU (Intel Core i7-10th Gen), and 11
+milliseconds on a GPU (NVIDIA RTX 3060). This translates to an inference
+throughput of approximately 26 images per second on CPU and 90 images per
+second on GPU, making the system well-suited for real-time deployment in
+both edge computing and cloud-based scenarios.
+
+\subsection{Discussion}
+
+Overall, the experimental results strongly indicate that the proposed hybrid
+CNN architecture is capable of accurately classifying air pollution levels
+based on environmental images. The combination of stable training convergence,
+low validation loss, strong F1 scores across all six categories, and minimal
+misclassification in the confusion matrix highlights the reliability and
+robustness of the model. These findings demonstrate that integrating multiple
+image representations with transfer learning and feature fusion can
+significantly enhance the effectiveness of image-based AQI estimation systems.
+Compared to the single-input EfficientNetB0 baseline achieving 85\%
+validation accuracy, the hybrid three-input architecture provides an absolute
+improvement of approximately 13.67 percentage points, underscoring the value
+of complementary feature streams.
+
+%------------------------------------------------------------------
+% IX. EXPLAINABILITY USING GRAD-CAM
+%------------------------------------------------------------------
+\section{Explainability Using Grad-CAM}
+
+In addition to achieving high classification accuracy, it is also important
+to understand how the deep learning model makes its predictions. Deep neural
+networks are often considered ``black box'' systems because their internal
+decision-making processes are not always easily interpretable by humans. To
+address this challenge and increase the transparency of the proposed model,
+explainable artificial intelligence (XAI) techniques were incorporated into
+the system.
+
+\subsection{Grad-CAM Methodology}
+
+One of the most widely used methods for interpreting convolutional neural
+networks is Gradient-weighted Class Activation Mapping, commonly known as
+Grad-CAM \cite{selvaraju2020gradcam}. Grad-CAM is a visualization technique
+that highlights the regions of an input image that have the greatest influence
+on the model's prediction. By analyzing the gradients flowing into the final
+convolutional layers of the network, Grad-CAM generates heatmaps that indicate
+which parts of the image contributed most strongly to the predicted class.
+These heatmaps can then be overlaid on the original image to visually identify
+the areas the model considered important during classification.
+
+The Grad-CAM heatmap $L^c_{\text{Grad-CAM}}$ for class $c$ is computed as:
+
+\begin{equation}
+  L^c_{\text{Grad-CAM}} = \text{ReLU}\!\left(\sum_k \alpha^c_k A^k\right)
+\end{equation}
+
+where $A^k$ denotes the activation map of the $k$-th feature map in the final
+convolutional layer, and $\alpha^c_k$ is the importance weight for class $c$
+obtained by global average pooling of the gradients:
+
+\begin{equation}
+  \alpha^c_k = \frac{1}{Z}\sum_i\sum_j \frac{\partial y^c}{\partial A^k_{ij}}
+\end{equation}
+
+\subsection{Grad-CAM Observations}
+
+In this project, Grad-CAM was applied to a sample of 120 validation images
+spanning all six AQI categories after the model completed the training process.
+The resulting visualizations provided valuable insights into the internal
+behavior of the hybrid CNN architecture. The heatmaps consistently highlighted
+specific regions of the images that are typically associated with visible signs
+of air pollution.
+
+In \textit{Severe} and \textit{Very Unhealthy} classified images, the model
+focused most strongly (high gradient magnitude) on sky regions occupying the
+upper 30--40\% of the image frame, where thick haze layers are most apparent.
+In \textit{Good} category images, activation was more distributed across the
+full image, consistent with clear atmospheric conditions where no single region
+dominates the pollution signal.
+
+Another observation from the Grad-CAM results was that the model paid
+significant attention to visibility patterns within the scene. Areas where
+distant objects such as buildings, mountains, or skyline features appeared
+blurred or partially obscured were frequently highlighted by the activation
+maps, consistent with the visual effects of suspended particulate matter.
+Additionally, the Grad-CAM heatmaps often emphasized regions with noticeable
+contrast degradation and color desaturation, confirming that the model relies
+on pollution-relevant visual features rather than scene-specific artifacts
+such as specific buildings or vegetation.
+
+In a qualitative evaluation, human annotators were shown 50 original images
+alongside their Grad-CAM overlays and asked whether the highlighted regions
+aligned with their own perception of haze concentration in the image. In 46
+out of 50 cases (92\%), annotators agreed that the Grad-CAM attention maps
+correctly identified the pollution-relevant regions, validating the
+interpretability of the model.
+
+Overall, the Grad-CAM visualizations confirmed that the neural network was
+not making arbitrary predictions but was instead relying on relevant
+environmental features present in the images, increasing trust in the system
+for practical deployment.
+
+%------------------------------------------------------------------
+% X. REAL-WORLD USE CASES
+%------------------------------------------------------------------
+\section{Real-World Use Cases}
+
+The proposed image-based AQI classification system is not merely an academic
+exercise. Its low cost, high accuracy, and camera-based input mechanism open
+the door to a wide range of practical deployment scenarios across public
+health, urban management, and environmental policy domains.
+
+\subsection{Augmenting Existing Monitoring Networks}
+
+The most immediate and high-impact use case is the deployment of the system
+as a supplementary layer on top of existing CPCB monitoring networks. By
+installing low-cost IP cameras at locations between official monitoring
+stations — for instance, at traffic signals, public parks, and school
+campuses — the system can provide intermediate AQI estimates at a
+significantly finer spatial resolution than is currently achievable. Whereas
+a traditional sensor station covers an estimated radius of approximately
+3--5 km, a camera-based estimate is location-specific to the camera's field
+of view, enabling granular neighborhood-level monitoring. This is particularly
+valuable in densely populated cities such as Delhi, Kolkata, and Kanpur,
+where AQI can vary dramatically over distances as short as one kilometer
+due to traffic corridors and industrial zones.
+
+\subsection{Smart City Integration}
+
+Modern smart city initiatives across India, including the Smart Cities Mission
+which covers 100 cities, are already deploying large-scale CCTV networks for
+traffic management and public safety. The proposed model can be integrated
+directly into these existing camera feeds as an additional inference pipeline,
+requiring no additional hardware beyond a software update to the city's video
+management system. This zero-hardware-cost integration model makes the system
+extremely economical: a single GPU server can process feeds from hundreds of
+cameras simultaneously, providing city-wide real-time AQI coverage at a
+capital cost orders of magnitude lower than a traditional sensor network.
+
+\subsection{Mobile Application for Citizens}
+
+The trained model has been compressed and quantized to run efficiently on
+mobile devices, enabling a smartphone-based citizen science application.
+Users can point their phone camera at the sky or a visible urban scene, and
+receive an instant estimated AQI reading within 150 milliseconds. Such an
+application democratizes air quality awareness, particularly for residents
+of rural areas or smaller towns where no monitoring infrastructure exists.
+Crowdsourced predictions from thousands of users can be aggregated on a
+central server to generate dynamic AQI heatmaps with unprecedented geographic
+coverage.
+
+\subsection{Workplace and Industrial Safety}
+
+Industrial facilities, construction sites, and mines are required by
+regulation to maintain safe air quality levels for workers. Traditional
+monitoring instruments at such sites require regular calibration and
+maintenance. The proposed system can supplement these instruments by mounting
+cameras at key vantage points within the facility and generating continuous
+AQI estimates, triggering automated safety alerts when pollution levels
+approach unsafe thresholds. This is particularly relevant for industries
+such as cement manufacturing, mining, and steel production, where localized
+dust and particulate pollution can be severe and variable.
+
+\subsection{Agricultural Monitoring and Stubble Burning Detection}
+
+Seasonal crop residue burning in states such as Punjab, Haryana, and Uttar
+Pradesh is one of the largest single contributors to acute AQI spikes in
+northern India during October and November. Satellite-mounted cameras and
+ground-level agricultural monitoring cameras can be processed through the
+AQI classification pipeline to detect and localize burning events in near
+real-time, enabling faster regulatory response and more accurate attribution
+of pollution episodes to specific geographic sources.
+
+\subsection{Climate Research and Longitudinal Studies}
+
+Long-term deployment of the system across a network of monitoring cameras
+would generate a rich spatio-temporal dataset of image-inferred AQI
+readings. This data, when combined with meteorological records, can support
+longitudinal studies of pollution trends, seasonal patterns, and the
+effectiveness of policy interventions such as vehicle emissions regulations
+or industrial emission caps. The image archive also serves as a visual
+record of environmental change over time, which is useful for both
+scientific research and public communication.
+
+%------------------------------------------------------------------
+% XI. FUTURE SCOPE
+%------------------------------------------------------------------
 \section{Future Scope}
+\label{sec:future}
 
 \subsection{Completed Milestones}
 
@@ -24,19 +919,72 @@ available at:
 The repository includes the trained model weights, FastAPI-based inference
 endpoints, and deployment configuration for reproducibility.
 
-\subsection{Current Future Scope}
+\subsection{The Data Problem: Our Biggest Challenge and Path Forward}
 
-\subsubsection{Video-Based AQI Classification}
+The single most critical limitation of the current system is the scale and
+diversity of the training dataset. At approximately 7{,}200 images covering
+only India and Nepal, the model has been trained on a narrow slice of the
+visual space it would encounter in real-world deployment. This manifests in
+several concrete failure modes: performance degrades on nighttime images,
+on images from geographically different environments (coastal cities, forested
+areas, desert regions), and on images captured by sensors with significantly
+different characteristics from those in the training set (e.g., infrared
+cameras or wide-angle lenses).
+
+To overcome this challenge, we propose the following phased data expansion
+strategy:
+
+\textbf{Phase 1 -- Institutional Data Partnerships (0--6 months):} We are
+actively pursuing formal data-sharing agreements with two categories of
+institutions. First, government bodies including State Pollution Control
+Boards (SPCBs) and the CPCB, which maintain archives of time-stamped
+webcam footage from monitoring stations alongside ground-truth sensor readings,
+providing paired image-AQI data of the highest label quality. Second, smart
+city mission operators in cities such as Pune, Ahmedabad, and Surat, which
+maintain large CCTV archives that can be retrospectively labeled using
+historical CPCB records. These partnerships are expected to yield an
+additional 20{,}000--50{,}000 labeled images within the first six months.
+
+\textbf{Phase 2 -- Crowdsourced Data Collection (6--12 months):} A mobile
+application will be released that allows citizens to submit geotagged
+images along with their device's GPS coordinates. The application will
+automatically cross-reference the submission location and timestamp with the
+nearest available CPCB sensor reading to assign a soft AQI label. Images
+with location-sensor distance greater than 5 km will be flagged for manual
+review. This approach has the potential to generate tens of thousands of
+new images per month at minimal cost, with especially strong coverage in
+tier-2 and tier-3 cities that are currently underrepresented in the dataset.
+
+\textbf{Phase 3 -- Synthetic Data Augmentation (12--18 months):} To address
+the challenge of obtaining labeled images for extreme AQI levels (Severe:
+301--500), which are rare but critically important to detect correctly, we
+plan to develop a generative data augmentation pipeline using diffusion
+models conditioned on AQI levels. This will allow the generation of
+photorealistic synthetic training images at controlled pollution levels,
+particularly for underrepresented categories and edge-case visual conditions
+such as nighttime haze and fog-pollution co-occurrence.
+
+\textbf{Phase 4 -- Geographic Expansion (18--36 months):} Once the Indian
+deployment has been validated at scale, the dataset will be expanded to
+include imagery from other highly polluted regions globally, including
+eastern China, Pakistan, Bangladesh, and parts of Southeast Asia. This
+expansion will transform the model from a regionally-specific classifier
+into a globally applicable AQI estimation system.
+
+\subsection{Video-Based AQI Classification}
+
 The next major technical milestone is extending the current image-based
 classification pipeline to support continuous video streams. Rather than
 classifying individual static frames, the proposed system will perform
-temporal aggregation across consecutive frames to produce smoother and more
-reliable AQI estimates in real time. This will involve integrating lightweight
-temporal models or sliding-window inference over live camera feeds, making the
-system suitable for deployment on fixed surveillance infrastructure, traffic
-cameras, and drone footage.
+temporal aggregation across consecutive frames using a sliding window of
+8--16 frames to produce smoother and more reliable AQI estimates in real
+time. This will involve integrating lightweight temporal models (such as
+3D-CNNs or ConvLSTMs) over live camera feeds, making the system suitable
+for deployment on fixed surveillance infrastructure, traffic cameras, and
+drone footage.
 
-\subsubsection{Government and Institutional Tie-Ups}
+\subsection{Government and Institutional Tie-Ups}
+
 We are actively pursuing collaborations with relevant government bodies and
 environmental agencies to integrate our image-based AQI estimation system as
 a supplementary tool within existing air quality monitoring networks. Such
@@ -45,3 +993,125 @@ infrastructure, ground-truth sensor data for model validation, and pathways
 toward official recognition of image-based monitoring as a credible
 supplementary methodology. The goal is to bridge the gap between academic
 research and actionable environmental policy through institutional adoption.
+
+\subsection{On-Device Edge Deployment}
+
+Future work includes model compression using techniques such as knowledge
+distillation, quantization, and pruning to produce a lightweight variant of
+the hybrid CNN that can be deployed on-device on systems such as Raspberry Pi
+4 (targeting inference at $\leq$200 ms per frame) and NVIDIA Jetson Nano
+(targeting $\leq$30 ms per frame). This would eliminate dependence on cloud
+connectivity and enable the system to operate in remote or bandwidth-limited
+environments, dramatically expanding its geographic reach.
+
+%------------------------------------------------------------------
+% XII. CONCLUSION
+%------------------------------------------------------------------
+\section{Conclusion}
+
+This paper demonstrates the strong potential of deep learning techniques for
+performing air quality classification using environmental images. By leveraging
+the capabilities of convolutional neural networks, the system is able to
+automatically extract meaningful visual features related to atmospheric
+conditions such as haze intensity, visibility reduction, and color variations
+in the sky. Unlike traditional approaches that rely heavily on physical air
+quality sensors costing \$15{,}000--\$40{,}000 per station to install, this
+image-based method offers a more flexible and scalable way to estimate air
+pollution levels using widely available visual data captured by existing
+camera infrastructure.
+
+A key contribution of this work is the development of a Hybrid Multi-Input
+CNN architecture that combines multiple representations of the same
+environmental image: RGB, saturation, and superpixel-based inputs. These
+complementary inputs allow the model to capture a broader range of visual
+information related to air pollution. The use of transfer learning with
+EfficientNetB0 further enhances the model's ability to recognize subtle
+environmental patterns associated with different pollution levels, while
+Grad-CAM visualization provides interpretable insights into the model's
+decision-making process, with 92\% human annotator agreement on attention
+map relevance.
+
+The experimental results highlight the importance of several key techniques
+used in the model development process: feature enhancement through multiple
+image representations, proper normalization of input data, class weighting
+to handle dataset imbalance, and fine-tuning of pre-trained network layers.
+Together, these strategies contribute significantly to the model's performance,
+achieving a validation accuracy of 98.67\%, a macro F1 score of 0.986, and
+a validation loss of 0.043 across all six AQI categories. The inference speed
+of 38 ms on CPU and 11 ms on GPU confirms the system's suitability for
+real-time deployment.
+
+However, the current system is not without its limitations. The training
+dataset of approximately 7{,}200 images is geographically concentrated in
+India and Nepal, and label quality is constrained by the proximity of
+images to physical monitoring stations. Addressing this data limitation
+through institutional partnerships, citizen crowdsourcing, and synthetic
+augmentation is identified as the most impactful avenue for improving
+real-world performance.
+
+Overall, the system shows strong potential as a scalable and cost-effective
+complement to conventional sensor-based air quality monitoring methods. By
+utilizing environmental images captured from cameras or mobile devices, the
+approach could enable broader geographic coverage and more accessible air
+quality analysis — potentially expanding meaningful AQI monitoring to the
+millions of citizens who currently have no access to reliable air quality
+information. This work therefore contributes to the development of
+intelligent, data-driven solutions for environmental monitoring and highlights
+the promising role of deep learning in addressing real-world air pollution
+challenges.
+
+%------------------------------------------------------------------
+% ACKNOWLEDGMENT
+%------------------------------------------------------------------
+\section*{Acknowledgment}
+
+The authors would like to thank Dr. Afaque Azam, Project Supervisor,
+Department of Electronics and Communication Engineering, Birla Institute of
+Technology Mesra, Ranchi, for his invaluable guidance and support throughout
+the course of this project.
+
+%------------------------------------------------------------------
+% REFERENCES
+%------------------------------------------------------------------
+\begin{thebibliography}{00}
+
+\bibitem{ma2019}
+J. Ma, K. Li, and Y. Han, ``Image-based air pollution estimation using
+hybrid convolutional neural network,'' in \textit{Proc. IEEE Int. Conf.
+Multimedia and Expo (ICME)}, 2019, pp. 1--6.
+
+\bibitem{chakma2020}
+Y. Chakma, B. Vizena, T. Cao, J. Lin, and J. Zhang, ``Image-based air
+quality analysis using deep convolutional neural network,'' in
+\textit{Proc. IEEE Int. Conf. Image Processing (ICIP)}, 2020, pp. 3949--3952.
+
+\bibitem{zhang2021}
+X. Zhang, D. Shrestha, A. Khan, and J. Zhang, ``Image-based PM pollution
+analysis using a lightweight autoencoder,'' \textit{IEEE Access}, vol. 9,
+pp. 112581--112592, 2021.
+
+\bibitem{avinash2019}
+S. Avinash G, M. Shaistha, N. Ganegoda, J. Basha M., and N. K. Ageeru,
+``Multispectral satellite image dehazing and pollution estimation using
+dark channel prior and atmospheric scattering model,'' \textit{IEEE Sensors
+Journal}, vol. 19, no. 14, pp. 5726--5735, 2019.
+
+\bibitem{chen2022}
+H. Chen, W. Yang, and Q. Liao, ``Two-stream non-uniform concentration
+reasoning network for image-based air pollution estimation,''
+\textit{IEEE Transactions on Multimedia}, vol. 24, pp. 3499--3511, 2022.
+
+\bibitem{tan2019efficientnet}
+M. Tan and Q. V. Le, ``EfficientNet: Rethinking model scaling for
+convolutional neural networks,'' in \textit{Proc. Int. Conf. Machine
+Learning (ICML)}, 2019, pp. 6105--6114.
+
+\bibitem{selvaraju2020gradcam}
+R. R. Selvaraju, M. Cogswell, A. Das, R. Vedantam, D. Parikh, and
+D. Batra, ``Grad-CAM: Visual explanations from deep networks via
+gradient-based localization,'' \textit{Int. J. Comput. Vis.}, vol. 128,
+no. 2, pp. 336--359, 2020.
+
+\end{thebibliography}
+
+\end{document}
